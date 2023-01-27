@@ -3,6 +3,8 @@ const cheerio = require("cheerio");
 
 (async () => {
     const browser = await puppeteer.launch({
+//      headless: false,
+//      slowMo: 0, 
         defaultViewport: {
             width: 1272,
             height: 900
