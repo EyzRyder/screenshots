@@ -1,53 +1,43 @@
-const puppeteer = require("puppeteer");
-const cheerio = require("cheerio");
+const { chromium, firefox, webkit } = require('playwright');
 
 (async () => {
-    const browser = await puppeteer.launch({
-//      headless: false,
-//      slowMo: 0, 
-        defaultViewport: {
-            width: 1272,
-            height: 900
-        }
-    });
-
-    function MetaTag() {
-        const getMetatag = (name) =>
-            $(`meta[name=${name}]`).attr('content') ||
-            $(`meta[property="og:${name}"]`).attr('content') ||
-            $(`meta[property="og:${name}"]`).attr('content');
-
-
-        return {
-            title: $('title').first().text(),
-            favicon: $('link[rel="shortcut icon"]').attr('href'),
-            description: getMetatag('description'),
-            img: getMetatag("image"),
-            author: getMetatag('author'),
-        }
-    }
-
+    const browser = await chromium.launch();  // Or 'firefox' or 'webkit'.
     const page = await browser.newPage();
-    await page.goto("https://github.com", { waitUntil: "domcontentloaded", });
+    await page.goto('https://github.com');
 
     await page.screenshot({ path: "img/image.png" });
 
-    const pageData = await page.evaluate(() => {
+    // const text = await page.$eval('#e_7043762 > .e_texto.c > p > span', el => el.innerHTML);
+
+    async function tags() {
+        const getMetatag = async (name) => {
+            try {
+                return await page.$eval(`meta[name=${name}]`, el => el.content)
+            }
+            catch (err) {
+                err
+            }
+            try {
+                return await page.$eval(`meta[property="og:${name}"]`, el => el.content)
+            }
+            catch (err) {
+                err
+            }
+        }
         return {
-            html: document.documentElement.innerHTML,
-            width: document.documentElement.clientWidth,
-            height: document.documentElement.clientHeight
-        };
+            title: await page.$eval('title', el => el.innerText),
+            favicon: await page.$eval('link[rel=icon]', el => el.href),
+            description: await getMetatag('description'),
+            img: await getMetatag("image"),
+        }
+    }
+
+    console.log(await tags());
+
+    let html = await page.evaluate(() => {
+        return document.documentElement.innerHTML
     });
 
-
-    const $ = cheerio.load(pageData.html);
-
-    const element = $(".p-name ")
-
-    console.log(element.text());
-    console.log(await MetaTag());
-
-
     await browser.close();
+
 })()
